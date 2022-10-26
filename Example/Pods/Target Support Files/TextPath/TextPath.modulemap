@@ -1,0 +1,6 @@
+framework module TextPath {
+  umbrella header "TextPath-umbrella.h"
+
+  export *
+  module * { export * }
+}

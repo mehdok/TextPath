@@ -1,0 +1,16 @@
+PODS:
+  - TextPath (1.0.2)
+
+DEPENDENCIES:
+  - TextPath (from `../`)
+
+EXTERNAL SOURCES:
+  TextPath:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  TextPath: 5c849850c2bba0869ea12468ae9c9346eee61378
+
+PODFILE CHECKSUM: 3f427303316fc290615ed5f688c6b2462cbf29c6
+
+COCOAPODS: 1.11.3

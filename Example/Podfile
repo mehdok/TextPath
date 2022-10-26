@@ -1,0 +1,11 @@
+use_frameworks!
+
+platform :ios, '14.0'
+
+target 'EditorTextPath_Example' do
+  pod 'TextPath', :path => '../'
+
+  target 'EditorTextPath_Tests' do
+    inherit! :search_paths
+  end
+end

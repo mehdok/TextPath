@@ -1,0 +1,50 @@
+name: build
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - '*'
+      
+  pull_request:
+    branches: [ dev ]
+  
+env:
+  SCHEME: 'EditorTextPath-Example'
+  EXAMPLE_SCHEME: 'EditorTextPath-Example'
+  WORKSPACE: './Example/EditorTextPath.xcworkspace'
+  DESTINATION: "'platform=iOS Simulator,name=iPhone 13,OS=15.2'"
+  
+jobs:
+  code_style:
+    runs-on: macos-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Check code style
+        run: swiftformat . --lint
+
+  tests:
+    needs: code_style
+    runs-on: macos-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run unit tests
+      run: xcodebuild test -scheme ${{ env.SCHEME }} -workspace ${{ env.WORKSPACE }} -destination ${{ env.DESTINATION }} | xcpretty && exit ${PIPESTATUS[0]}
+
+  build:
+    needs: tests
+    runs-on: macos-latest
+    timeout-minutes: 15
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Debug Build
+      run: xcodebuild -workspace ${{ env.WORKSPACE }} -scheme ${{ env.EXAMPLE_SCHEME }} -destination ${{ env.DESTINATION }} -configuration Debug ONLY_ACTIVE_ARCH=NO build | xcpretty -c
+ 
+
+
