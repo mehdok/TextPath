@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'TextPath'
-  s.version          = '1.0.2'
+  s.version          = '1.0.0'
   s.summary          = 'A library to convert NSAttributedText TO SVG path.'
   s.description      = <<-DESC
 TODO: Add long description of the pod here.
