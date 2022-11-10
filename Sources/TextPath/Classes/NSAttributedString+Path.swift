@@ -15,8 +15,13 @@ public extension NSAttributedString {
     /// - Parameter bounds: text bounding box
     /// - Parameter withAttributes: if _true_ glyph attributes are included in returned TextPath
     /// - Parameter withPath: if _true_ a composed text path is included
+    /// - Parameter strikeUnderlineMatrix: A transformation matrix used to generate underLine and strike path
     /// - Returns: created text path or NULL if failed
-    func getTextPath(InBounds bounds: CGSize, withAttributes: Bool = true, withPath: Bool = true) -> TextPath? {
+    func getTextPath(InBounds bounds: CGSize,
+                     withAttributes: Bool = true,
+                     withPath: Bool = true,
+                     strikeUnderlineMatrix: CGAffineTransform = .identity) -> TextPath?
+    {
         let clearText = string
         if clearText.isEmpty {
             return nil
@@ -168,7 +173,7 @@ public extension NSAttributedString {
                     }
 
                     // add strike trough if exists
-                    if let strikePath = getStrikePath(tpLine) {
+                    if let strikePath = getStrikePath(tpLine, matrix: strikeUnderlineMatrix) {
                         let offset = CGPoint(x: startOffsetX ?? tpLine.lineBounds.minX,
                                              y: lineOffsetY + (tpLine.lineBounds.midY * 2 / 3))
                         let translation = CGAffineTransform(translationX: offset.x, y: offset.y)
@@ -176,7 +181,7 @@ public extension NSAttributedString {
                     }
 
                     // add underline if exists
-                    if let underlinePath = getUnderlinePath(tpLine) {
+                    if let underlinePath = getUnderlinePath(tpLine, matrix: strikeUnderlineMatrix) {
                         let lineHeight = underlinePath.boundingBoxOfPath.height * 2
                         let offset = CGPoint(x: startOffsetX ?? tpLine.lineBounds.minX, y: lineOffsetY - lineHeight)
                         let translation = CGAffineTransform(translationX: offset.x, y: offset.y)
@@ -239,9 +244,16 @@ public extension NSAttributedString {
 // MARK: - async representation
 
 public extension NSAttributedString {
-    func getTextPath(InBounds bounds: CGSize, withAttributes: Bool = true, withPath: Bool = true) async -> TextPath? {
+    func getTextPath(InBounds bounds: CGSize,
+                     withAttributes: Bool = true,
+                     withPath: Bool = true,
+                     strikeUnderlineMatrix: CGAffineTransform = .identity) async -> TextPath?
+    {
         await withCheckedContinuation { continuation in
-            getTextPath(InBounds: bounds, withAttributes: withAttributes, withPath: withPath) { path in
+            getTextPath(InBounds: bounds,
+                        withAttributes: withAttributes,
+                        withPath: withPath,
+                        strikeUnderlineMatrix: strikeUnderlineMatrix) { path in
                 continuation.resume(returning: path)
             }
         }
@@ -251,9 +263,17 @@ public extension NSAttributedString {
 // MARK: - Helpers
 
 private extension NSAttributedString {
-    func getTextPath(InBounds bounds: CGSize, withAttributes: Bool = true, withPath: Bool = true, completion: @escaping (TextPath?) -> Void) {
+    func getTextPath(InBounds bounds: CGSize,
+                     withAttributes: Bool = true,
+                     withPath: Bool = true,
+                     strikeUnderlineMatrix: CGAffineTransform = .identity,
+                     completion: @escaping (TextPath?) -> Void)
+    {
         DispatchQueue.main.async { [weak self] in
-            let path = self?.getTextPath(InBounds: bounds, withAttributes: withAttributes, withPath: withPath)
+            let path = self?.getTextPath(InBounds: bounds,
+                                         withAttributes: withAttributes,
+                                         withPath: withPath,
+                                         strikeUnderlineMatrix: strikeUnderlineMatrix)
             completion(path)
         }
     }
@@ -273,27 +293,27 @@ private extension NSAttributedString {
         return path?.frames.first?.lines.first?.textBounds.height ?? 1
     }
 
-    func getStrikePath(_ tpLine: TextPathLine) -> CGPath? {
+    func getStrikePath(_ tpLine: TextPathLine, matrix: CGAffineTransform) -> CGPath? {
         if let strike = tpLine.attributes?[0][.strikethroughStyle] as? Int, strike == 1 {
             let lineHeight = getDashHeight() * 2 / 3
-            return getLinePath(lineHeight: lineHeight, width: tpLine.lineBounds.width)
+            return getLinePath(lineHeight: lineHeight, width: tpLine.lineBounds.width, matrix: matrix)
         }
 
         return nil
     }
 
-    func getUnderlinePath(_ tpLine: TextPathLine) -> CGPath? {
+    func getUnderlinePath(_ tpLine: TextPathLine, matrix: CGAffineTransform) -> CGPath? {
         if let underline = tpLine.attributes?[0][.underlineStyle] as? Int, underline == 1 {
             let lineHeight = getDashHeight() * 2 / 3
-            return getLinePath(lineHeight: lineHeight, width: tpLine.lineBounds.width)
+            return getLinePath(lineHeight: lineHeight, width: tpLine.lineBounds.width, matrix: matrix)
         }
 
         return nil
     }
 
-    func getLinePath(lineHeight: CGFloat, width: CGFloat) -> CGPath {
+    func getLinePath(lineHeight: CGFloat, width: CGFloat, matrix: CGAffineTransform) -> CGPath {
         let strikePath = CGMutablePath()
-        strikePath.addRect(CGRect(x: 0, y: 0, width: width, height: lineHeight))
+        strikePath.addRect(CGRect(x: 0, y: 0, width: width, height: lineHeight), transform: matrix)
         return strikePath
     }
 }
