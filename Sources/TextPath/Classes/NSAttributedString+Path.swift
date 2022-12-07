@@ -164,7 +164,7 @@ public extension NSAttributedString {
                             let offset = CGPoint(x: position.x, y: position.y + (tpLine.ascent - tpLine.effectiveAscent) + linesShift)
 
                             startOffsetX = startOffsetX ?? (offset.x + tpGlyph.originOffset.x) // save first char position
-                            lineOffsetY = offset.y
+                            lineOffsetY = [lineOffsetY, offset.y].max() ?? 0
 
                             let T = CGAffineTransform(translationX: offset.x, y: offset.y)
                             path.addPath(tpGlyph.path, transform: T)
