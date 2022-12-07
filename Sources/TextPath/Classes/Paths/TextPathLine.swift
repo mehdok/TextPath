@@ -29,6 +29,8 @@ public class TextPathLine {
 
     /// Line descent
     public internal(set) var descent = CGFloat(0.0)
+    public internal(set) var underlineThickness = CGFloat(0.0)
+    public internal(set) var underlinePosition = CGFloat(0.0)
 
     /**
      Line effective descent is calculated based on lineRuns typographic properties,

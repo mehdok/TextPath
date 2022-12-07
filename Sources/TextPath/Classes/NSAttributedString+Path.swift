@@ -84,6 +84,9 @@ public extension NSAttributedString {
                         let attributes = (CTRunGetAttributes(lineRun) as? TextPathAttributes) ?? defaultAttributes
                         let font = (attributes[fontAttributeKey] as? UIFont) ?? (defaultAttributes[fontAttributeKey] as! UIFont)
 
+                        tpLine.underlineThickness = CTFontGetUnderlineThickness(font)
+                        tpLine.underlinePosition = CTFontGetUnderlinePosition(font)
+
                         if withAttributes {
                             tpLine.attributes![lineRunIndex] = attributes
                         }
@@ -174,17 +177,22 @@ public extension NSAttributedString {
 
                     // add strike trough if exists
                     if let strikePath = getStrikePath(tpLine, matrix: strikeUnderlineMatrix) {
-                        let offset = CGPoint(x: startOffsetX ?? tpLine.lineBounds.minX,
-                                             y: lineOffsetY + (tpLine.lineBounds.midY * 2 / 3))
-                        let translation = CGAffineTransform(translationX: offset.x, y: offset.y)
+                        let baseLineOffset = abs(tpLine.lineBounds.origin.y) < abs(tpLine.underlinePosition) ? tpLine.underlinePosition : 0
+
+                        let strikePosY = lineOffsetY +
+                            tpLine.textBounds.origin.y +
+                            (tpLine.textBounds.height) / 2 +
+                            baseLineOffset
+
+                        let translation = CGAffineTransform(translationX: startOffsetX ?? tpLine.lineBounds.minX,
+                                                            y: strikePosY)
                         path.addPath(strikePath, transform: translation)
                     }
 
                     // add underline if exists
                     if let underlinePath = getUnderlinePath(tpLine, matrix: strikeUnderlineMatrix) {
-                        let lineHeight = underlinePath.boundingBoxOfPath.height * 2
-                        let offset = CGPoint(x: startOffsetX ?? tpLine.lineBounds.minX, y: lineOffsetY - lineHeight)
-                        let translation = CGAffineTransform(translationX: offset.x, y: offset.y)
+                        let translation = CGAffineTransform(translationX: startOffsetX ?? tpLine.lineBounds.minX,
+                                                            y: lineOffsetY + tpLine.underlinePosition)
                         path.addPath(underlinePath, transform: translation)
                     }
 
@@ -282,21 +290,9 @@ private extension NSAttributedString {
 // MARK: - strike and underline functions
 
 private extension NSAttributedString {
-    func getDashHeight() -> CGFloat {
-        guard let font = attribute(NSAttributedString.Key.font, at: 0, effectiveRange: nil) else {
-            return 1
-        }
-
-        let text = NSMutableAttributedString(string: "-")
-        text.addAttributes([NSAttributedString.Key.font: font], range: NSRange(location: 0, length: text.length))
-        let path = text.getTextPath(InBounds: CGSize(width: 100, height: 100))
-        return path?.frames.first?.lines.first?.textBounds.height ?? 1
-    }
-
     func getStrikePath(_ tpLine: TextPathLine, matrix: CGAffineTransform) -> CGPath? {
         if let strike = tpLine.attributes?[0][.strikethroughStyle] as? Int, strike == 1 {
-            let lineHeight = getDashHeight() * 2 / 3
-            return getLinePath(lineHeight: lineHeight, width: tpLine.lineBounds.width, matrix: matrix)
+            return getLinePath(lineHeight: tpLine.underlineThickness, width: tpLine.lineBounds.width, matrix: matrix)
         }
 
         return nil
@@ -304,8 +300,7 @@ private extension NSAttributedString {
 
     func getUnderlinePath(_ tpLine: TextPathLine, matrix: CGAffineTransform) -> CGPath? {
         if let underline = tpLine.attributes?[0][.underlineStyle] as? Int, underline == 1 {
-            let lineHeight = getDashHeight() * 2 / 3
-            return getLinePath(lineHeight: lineHeight, width: tpLine.lineBounds.width, matrix: matrix)
+            return getLinePath(lineHeight: tpLine.underlineThickness, width: tpLine.lineBounds.width, matrix: matrix)
         }
 
         return nil
